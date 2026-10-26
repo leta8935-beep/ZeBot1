@@ -6,6 +6,7 @@ class Database:
         self.pool = None
 
     async def connect(self):
+        # Отключаем кэш запросов для стабильной работы с Supabase Pooler
         self.pool = await asyncpg.create_pool(
             self.dsn, min_size=1, max_size=5,
             statement_cache_size=0, max_cached_statement_lifetime=0
@@ -24,12 +25,15 @@ class Database:
                 last_collect DOUBLE PRECISION DEFAULT 0
             );
             """)
+            
+            # Безопасное добавление всех новых колонок
             await c.execute("ALTER TABLE guild_settings ADD COLUMN IF NOT EXISTS curator_role BIGINT;")
             await c.execute("ALTER TABLE guild_settings ADD COLUMN IF NOT EXISTS mod_role BIGINT;")
             await c.execute("ALTER TABLE guild_settings ADD COLUMN IF NOT EXISTS admin_role BIGINT;")
             await c.execute("ALTER TABLE guild_settings ADD COLUMN IF NOT EXISTS pr_role BIGINT;")
             await c.execute("ALTER TABLE guild_settings ADD COLUMN IF NOT EXISTS manager_id BIGINT;")
             await c.execute("ALTER TABLE guild_settings ADD COLUMN IF NOT EXISTS state_name TEXT DEFAULT 'РОССИЙСКАЯ ФЕДЕРАЦИЯ';")
+            await c.execute("ALTER TABLE guild_settings ADD COLUMN IF NOT EXISTS state_name_en TEXT DEFAULT 'RUSSIAN FEDERATION';")
             await c.execute("ALTER TABLE guild_settings ADD COLUMN IF NOT EXISTS state_code TEXT DEFAULT 'RUS';")
             await c.execute("ALTER TABLE businesses ADD COLUMN IF NOT EXISTS activity TEXT;")
 
@@ -89,7 +93,7 @@ class Database:
     async def set_guild_setting(self, guild_id: int, column: str, value):
         allowed_columns = [
             "review_channel_id", "start_roles", "curator_role", "mod_role",
-            "admin_role", "pr_role", "manager_id", "state_name", "state_code"
+            "admin_role", "pr_role", "manager_id", "state_name", "state_name_en", "state_code"
         ]
         if column not in allowed_columns: return
         async with self.pool.acquire() as c:
