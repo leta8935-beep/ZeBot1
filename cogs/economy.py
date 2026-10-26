@@ -16,23 +16,29 @@ class Economy(commands.Cog):
 
         target = member or i.user
         u = await self.bot.db.get_user(target.id)
+        p = await self.bot.db.get_passport(target.id)
+        settings = await self.bot.db.get_guild_settings(i.guild.id)
         
-        # Создаем современный, минималистичный эмбед
+        currency = settings["currency"] if settings and settings["currency"] else "RUB"
+
+        # Красивый эмбед по твоему шаблону
         embed = discord.Embed(
-            title="💳 Финансовый отчёт",
-            color=0x2b2d31, # Темный цвет Discord (стильно и строго)
-            description=(
-                f"> **Владелец счёта:** {target.mention}\n"
-                f"> **Статус:** Верифицирован ✅\n\n"
-                f"╭─────────────── 💰 Баланс ───────────────╮\n"
-                f"│  **{fmt(u['wallet'])}** RUB\n"
-                f"╰─────────────────────────────────────────╯\n\n"
-                f"-# Безопасность транзакций гарантирована Zebot Bank"
-            )
+            color=1685058,
+            title="💰 » Финансовый отчёт",
+            description=f"**- [ 👤 ] Участник :** *{target.mention};*\n**- [ 🧾 ] Баланс :** *{fmt(u['wallet'])} {currency}.*"
         )
-        embed.set_author(name=target.display_name, icon_url=target.display_avatar.url)
-        embed.set_footer(text="Zebot Economy System", icon_url=i.guild.me.display_avatar.url)
+        embed.set_author(
+            name=target.display_name,
+            icon_url=target.display_avatar.url
+        )
         
+        # Если есть паспорт, берем ФИО и фото для футера
+        if p:
+            full_name = f"{p['surname']} {p['name']}"
+            embed.set_footer(text=full_name, icon_url=p["photo_url"])
+        else:
+            embed.set_footer(text="Нет паспорта", icon_url=i.guild.me.display_avatar.url)
+
         await i.response.send_message(embed=embed, ephemeral=(target.id == i.user.id))
 
     @app_commands.command(name="pay", description="Перевести средства (налог 5%)")
@@ -53,12 +59,7 @@ class Economy(commands.Cog):
         await self.bot.db.log(i.user.id, member.id, amount, "pay")
 
         embed = discord.Embed(title="✅ Перевод выполнен", color=0x57F287)
-        embed.description = (
-            f"> **Отправитель:** {i.user.mention}\n"
-            f"> **Получатель:** {member.mention}\n\n"
-            f"Сумма перевода: **{fmt(net)}** 💰\n"
-            f"Комиссия (5%): **{fmt(tax)}** 💸"
-        )
+        embed.description = f"**{i.user.name}** перевел **{fmt(net)}** 💰 для {member.mention}\n*Налог (5%): {fmt(tax)}*"
         await i.response.send_message(embed=embed)
 
 async def setup(bot):
