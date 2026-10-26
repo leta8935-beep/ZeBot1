@@ -24,7 +24,47 @@ class OrgEditModal(discord.ui.Modal, title="Настройки организа�
                 "UPDATE organizations SET name=$1, logo_url=$2 WHERE org_id=$3",
                 self.name.value, self.logo_url.value, self.org_id
             )
-        await interaction.response.send_message("✅ Данные организации обновлены! Нажмите `/org` снова, чтобы увидеть изменения.", ephemeral=True)
+        await interaction.response.send_message("✅ Данные обновлены! Нажмите `/org` снова.", ephemeral=True)
+
+# ─── Управление сотрудниками ───
+class StaffManageView(discord.ui.View):
+    def __init__(self, bot, org_id: int):
+        super().__init__(timeout=120)
+        self.bot = bot
+        self.org_id = org_id
+
+    @discord.ui.button(label="Нанять сотрудника", style=discord.ButtonStyle.success, emoji="➕")
+    async def hire(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(HireModal(self.bot, self.org_id))
+
+    @discord.ui.button(label="Список сотрудников", style=discord.ButtonStyle.secondary, emoji="📋")
+    async def list_staff(self, interaction: discord.Interaction, button: discord.ui.Button):
+        members = await self.bot.db.get_org_members(self.org_id)
+        if not members:
+            return await interaction.response.send_message("В организации нет сотрудников.", ephemeral=True)
+        
+        text = "\n".join([f"• <@{m['user_id']}> — {m['rank']}" for m in members])
+        await interaction.response.send_message(f"**Сотрудники:**\n{text}", ephemeral=True)
+
+class HireModal(discord.ui.Modal, title="Нанять сотрудника"):
+    user_id = discord.ui.TextInput(label="Discord ID или @упоминание", placeholder="123456789012345678", max_length=50)
+    rank = discord.ui.TextInput(label="Должность", placeholder="Менеджер", max_length=30, default="Сотрудник")
+
+    def __init__(self, bot, org_id: int):
+        super().__init__()
+        self.bot = bot
+        self.org_id = org_id
+
+    async def on_submit(self, interaction: discord.Interaction):
+        # Очищаем ввод от <@ ! >
+        raw_id = self.user_id.value.replace("<@", "").replace("!", "").replace(">", "").strip()
+        try:
+            uid = int(raw_id)
+        except ValueError:
+            return await interaction.response.send_message("Ошибка: неверный ID пользователя.", ephemeral=True)
+        
+        await self.bot.db.add_org_member(self.org_id, uid, self.rank.value)
+        await interaction.response.send_message(f"✅ <@{uid}> принят на должность **{self.rank.value}**!", ephemeral=True)
 
 class OrgSelect(discord.ui.Select):
     def __init__(self, orgs: list, bot):
@@ -83,7 +123,7 @@ class OrgActions(discord.ui.View):
         await self.bot.db.update_organization(self.org_id, last_collect=now)
         await interaction.response.send_message(f"Вы собрали **{fmt(accumulated)}** RUB!", ephemeral=True)
 
-    @discord.ui.button(label="Пополнить бюджет", style=discord.ButtonStyle.primary, emoji="🏦")
+    @discord.ui.button(label="Бюджет", style=discord.ButtonStyle.primary, emoji="🏦")
     async def deposit(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_modal(DepositModal(self.bot, self.org_id))
 
@@ -106,6 +146,13 @@ class OrgActions(discord.ui.View):
         if not org or org["owner_id"] != interaction.user.id:
             return await interaction.response.send_message("Только владелец может менять настройки.", ephemeral=True)
         await interaction.response.send_modal(OrgEditModal(self.bot, self.org_id, org["name"], org["logo_url"]))
+
+    @discord.ui.button(label="Сотрудники", style=discord.ButtonStyle.secondary, emoji="👥", row=1)
+    async def staff_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        org = await self.bot.db.get_organization(self.org_id)
+        if not org or org["owner_id"] != interaction.user.id:
+            return await interaction.response.send_message("Только владелец может управлять составом.", ephemeral=True)
+        await interaction.response.send_message("Управление сотрудниками:", view=StaffManageView(self.bot, self.org_id), ephemeral=True)
 
 class DepositModal(discord.ui.Modal, title="Пополнение бюджета"):
     amount = discord.ui.TextInput(label="Сумма", placeholder="1000", max_length=12)
@@ -136,7 +183,7 @@ class Organization(commands.Cog):
     async def org(self, i: discord.Interaction):
         orgs = await self.bot.db.get_user_organizations(i.user.id)
         if not orgs:
-            return await i.response.send_message("У вас нет организаций. Подайте заявку через панель!", ephemeral=True)
+            return await i.response.send_message("У вас нет организаций.", ephemeral=True)
         
         if len(orgs) == 1:
             org_id = orgs[0]["org_id"]
