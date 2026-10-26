@@ -11,7 +11,7 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 
 COGS = [
     "cogs.economy", 
-    "cogs.organization",  # <-- Убедись, что файл в папке cogs называется organization.py
+    "cogs.organisation",
     "cogs.admin", 
     "cogs.settings",
     "cogs.registration"
