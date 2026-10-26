@@ -34,6 +34,18 @@ class StateModal(discord.ui.Modal, title="Настройка государст�
         embed.add_field(name="Код", value=code, inline=False)
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
+class CurrencyModal(discord.ui.Modal, title="Настройка валюты"):
+    currency = discord.ui.TextInput(label="Символ или название валюты", placeholder="RUB или ₽", max_length=10)
+
+    def __init__(self, bot, guild_id):
+        super().__init__()
+        self.bot = bot
+        self.guild_id = guild_id
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await self.bot.db.set_guild_setting(self.guild_id, "currency", self.currency.value.strip())
+        await interaction.response.send_message(f"✅ Валюта изменена на **{self.currency.value.strip()}**", ephemeral=True)
+
 class ChannelSelect(discord.ui.Select):
     def __init__(self, bot, guild_id, channels):
         options = [discord.SelectOption(label=f"#{ch.name}", value=str(ch.id)) for ch in channels[:25]]
@@ -58,11 +70,9 @@ class RolesModal(discord.ui.Modal, title="Настройка ролей"):
         self.guild_id = guild_id
 
     async def on_submit(self, interaction: discord.Interaction):
-        if self.citizen.value:
-            await self.bot.db.set_guild_setting(self.guild_id, "start_roles", self.citizen.value.replace(" ", ""))
+        if self.citizen.value: await self.bot.db.set_guild_setting(self.guild_id, "start_roles", self.citizen.value.replace(" ", ""))
         for field, col in [(self.curator, "curator_role"), (self.mod, "mod_role"), (self.admin, "admin_role"), (self.pr, "pr_role")]:
-            if field.value:
-                await self.bot.db.set_guild_setting(self.guild_id, col, int(field.value))
+            if field.value: await self.bot.db.set_guild_setting(self.guild_id, col, int(field.value))
         await interaction.response.send_message("✅ Роли сохранены!", ephemeral=True)
 
 class SetupView(discord.ui.View):
@@ -75,6 +85,10 @@ class SetupView(discord.ui.View):
     @discord.ui.button(label="Государство", style=discord.ButtonStyle.primary, emoji="🌍")
     async def state_btn(self, i: discord.Interaction, b: discord.ui.Button):
         await i.response.send_modal(StateModal(self.bot, self.guild_id))
+
+    @discord.ui.button(label="Валюта", style=discord.ButtonStyle.primary, emoji="💵")
+    async def currency_btn(self, i: discord.Interaction, b: discord.ui.Button):
+        await i.response.send_modal(CurrencyModal(self.bot, self.guild_id))
 
     @discord.ui.button(label="Канал проверки", style=discord.ButtonStyle.secondary, emoji="📢")
     async def channel_btn(self, i: discord.Interaction, b: discord.ui.Button):
@@ -99,13 +113,14 @@ class Settings(commands.Cog):
     async def setup_cmd(self, i: discord.Interaction):
         s = await self.bot.db.get_guild_settings(i.guild.id)
         ru = s["state_name"] if s else "Не задано"
-        en = s["state_name_en"] if s else "Не задано"
         code = s["state_code"] if s else "Не задано"
+        curr = s["currency"] if s else "RUB"
         ch = f"<#{s['review_channel_id']}>" if s and s["review_channel_id"] else "Не задано"
         
         embed = discord.Embed(title="⚙️ Настройка сервера", color=0x5865F2)
         embed.description = "Нажмите на кнопку ниже, чтобы изменить параметр."
-        embed.add_field(name="🌍 Государство", value=f"{ru} / {en} ({code})", inline=False)
+        embed.add_field(name="🌍 Государство", value=f"{ru} ({code})", inline=False)
+        embed.add_field(name="💵 Валюта", value=curr, inline=False)
         embed.add_field(name="📢 Канал проверки", value=ch, inline=False)
         embed.set_footer(text="Все изменения применяются сразу.")
         
