@@ -11,7 +11,7 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 
 COGS = [
     "cogs.economy", 
-    "cogs.organization", # Переименовали
+    "cogs.organization",  # <-- Убедись, что файл в папке cogs называется organization.py
     "cogs.admin", 
     "cogs.settings",
     "cogs.registration"
@@ -32,8 +32,9 @@ class Zebot(commands.Bot):
                 print(f"Модуль {cog} загружен.")
             except Exception as e:
                 print(f"Ошибка при загрузке {cog}: {e}")
+        
         await self.tree.sync()
-        print("Бот запущен!")
+        print("Бот запущен, команды синхронизированы!")
 
 if __name__ == "__main__":
     if not TOKEN or not DATABASE_URL:
