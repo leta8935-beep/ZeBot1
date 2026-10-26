@@ -21,7 +21,7 @@ class Settings(commands.Cog):
         admin_role: discord.Role = None, 
         pr_role: discord.Role = None
     ):
-        # Сохраняем настройки канала и ролей
+        # Настройки канала и ролей
         await self.bot.db.set_guild_setting(i.guild.id, "review_channel_id", review_channel.id)
         await self.bot.db.set_guild_setting(i.guild.id, "start_roles", citizen_roles.replace(" ", ""))
         
@@ -30,7 +30,7 @@ class Settings(commands.Cog):
         if admin_role: await self.bot.db.set_guild_setting(i.guild.id, "admin_role", admin_role.id)
         if pr_role: await self.bot.db.set_guild_setting(i.guild.id, "pr_role", pr_role.id)
 
-        # Сохраняем настройки государства (новые колонки в БД)
+        # Настройки государства
         await self.bot.db.set_guild_setting(i.guild.id, "state_name", state_name_ru.upper())
         await self.bot.db.set_guild_setting(i.guild.id, "state_name_en", state_name_en.upper())
         await self.bot.db.set_guild_setting(i.guild.id, "state_code", state_code.upper())
@@ -38,13 +38,13 @@ class Settings(commands.Cog):
         embed = discord.Embed(title="✅ Настройки сохранены", color=0x57F287)
         embed.add_field(name="Канал проверки", value=review_channel.mention, inline=False)
         embed.add_field(name="Роли граждан", value=f"`{citizen_roles}`", inline=False)
-        embed.add_field(name="Государство", value=f"{state_name_ru} / {state_name_en} ({state_code})", inline=False)
+        embed.add_field(name="Государство", value=f"{state_name_ru.upper()} / {state_name_en.upper()} ({state_code.upper()})", inline=False)
         
         roles_msg = []
         if curator_role: roles_msg.append(f"👑 Куратор: {curator_role.mention}")
-        if mod_role: roles_msg.append(f"🛡️ Модер: {mod_role.mention}")
-        if admin_role: roles_msg.append(f"⚙️ Админ: {admin_role.mention}")
-        if pr_role: roles_msg.append(f"📢 PR: {pr_role.mention}")
+        if mod_role: roles_msg.append(f"🛡️ Модератор: {mod_role.mention}")
+        if admin_role: roles_msg.append(f"⚙️ Администратор: {admin_role.mention}")
+        if pr_role: roles_msg.append(f"📢 Пиар-менеджер: {pr_role.mention}")
         if roles_msg:
             embed.add_field(name="Роли стаффа", value="\n".join(roles_msg), inline=False)
 
