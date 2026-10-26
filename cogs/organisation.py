@@ -7,6 +7,26 @@ from utils.render import render_template
 
 def fmt(n: int) -> str: return f"{n:,}".replace(",", " ")
 
+# ─── Модалка для редактирования владельцем ───
+class OrgEditModal(discord.ui.Modal, title="Настройки организации"):
+    name = discord.ui.TextInput(label="Название", max_length=50)
+    logo_url = discord.ui.TextInput(label="Ссылка на логотип", max_length=300)
+
+    def __init__(self, bot, org_id: int, current_name: str, current_logo: str):
+        super().__init__()
+        self.bot = bot
+        self.org_id = org_id
+        self.name.default = current_name
+        self.logo_url.default = current_logo
+
+    async def on_submit(self, interaction: discord.Interaction):
+        async with self.bot.db.pool.acquire() as c:
+            await c.execute(
+                "UPDATE organizations SET name=$1, logo_url=$2 WHERE org_id=$3",
+                self.name.value, self.logo_url.value, self.org_id
+            )
+        await interaction.response.send_message("✅ Данные организации обновлены! Нажмите `/org` снова, чтобы увидеть изменения.", ephemeral=True)
+
 class OrgSelect(discord.ui.Select):
     def __init__(self, orgs: list, bot):
         options = [
@@ -28,28 +48,24 @@ class OrgSelect(discord.ui.Select):
         accumulated = min(int(((now - org["last_collect"]) / 3600) * income), income * 24)
 
         data = {
-            "name": org["name"],
-            "org_type": org["org_type"],
-            "sphere": org["sphere"],
-            "logo_url": org["logo_url"],
-            "income": income,
-            "acc": accumulated,
-            "balance": org["balance"],
-            "level": org["level"],
-            "owner": interaction.user.name
+            "name": org["name"], "org_type": org["org_type"], "sphere": org["sphere"],
+            "logo_url": org["logo_url"], "income": income, "acc": accumulated,
+            "balance": org["balance"], "level": org["level"], "owner": interaction.user.name
         }
         
         png = await render_template("organization.html", data)
         file = discord.File(fp=io.BytesIO(png), filename="org.png")
         
-        view = OrgActions(self.bot, org_id)
+        view = OrgActions(self.bot, org_id, org["name"], org["logo_url"])
         await interaction.followup.send(file=file, view=view, ephemeral=True)
 
 class OrgActions(discord.ui.View):
-    def __init__(self, bot, org_id: int):
+    def __init__(self, bot, org_id: int, org_name: str, logo_url: str):
         super().__init__(timeout=120)
         self.bot = bot
         self.org_id = org_id
+        self.org_name = org_name
+        self.logo_url = logo_url
 
     @discord.ui.button(label="Собрать прибыль", style=discord.ButtonStyle.success, emoji="💰")
     async def collect(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -85,6 +101,15 @@ class OrgActions(discord.ui.View):
         await self.bot.db.update_organization(self.org_id, level=org["level"]+1)
         await interaction.response.send_message(f"Организация улучшена до **LVL {org['level']+1}**!", ephemeral=True)
 
+    # НОВАЯ КНОПКА РЕДАКТИРОВАНИЯ
+    @discord.ui.button(label="Настройки", style=discord.ButtonStyle.secondary, emoji="⚙️", row=1)
+    async def edit_org(self, interaction: discord.Interaction, button: discord.ui.Button):
+        org = await self.bot.db.get_organization(self.org_id)
+        if not org or org["owner_id"] != interaction.user.id:
+            return await interaction.response.send_message("Только владелец может менять настройки.", ephemeral=True)
+        
+        await interaction.response.send_modal(OrgEditModal(self.bot, self.org_id, org["name"], org["logo_url"]))
+
 class DepositModal(discord.ui.Modal, title="Пополнение бюджета"):
     amount = discord.ui.TextInput(label="Сумма", placeholder="1000", max_length=12)
 
@@ -117,7 +142,6 @@ class Organization(commands.Cog):
             return await i.response.send_message("У вас нет организаций. Подайте заявку через панель!", ephemeral=True)
         
         if len(orgs) == 1:
-            # Если одна — сразу показываем карточку
             org_id = orgs[0]["org_id"]
             await i.response.defer(ephemeral=True)
             org = orgs[0]
@@ -131,10 +155,9 @@ class Organization(commands.Cog):
             }
             png = await render_template("organization.html", data)
             file = discord.File(fp=io.BytesIO(png), filename="org.png")
-            view = OrgActions(self.bot, org_id)
+            view = OrgActions(self.bot, org_id, org["name"], org["logo_url"])
             await i.followup.send(file=file, view=view, ephemeral=True)
         else:
-            # Если несколько — показываем SelectMenu
             view = discord.ui.View()
             view.add_item(OrgSelect(orgs, self.bot))
             await i.response.send_message("Выберите организацию:", view=view, ephemeral=True)
