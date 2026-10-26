@@ -7,7 +7,6 @@ from utils.render import render_template
 
 def fmt(n: int) -> str: return f"{n:,}".replace(",", " ")
 
-# ─── Модалка для редактирования владельцем ───
 class OrgEditModal(discord.ui.Modal, title="Настройки организации"):
     name = discord.ui.TextInput(label="Название", max_length=50)
     logo_url = discord.ui.TextInput(label="Ссылка на логотип", max_length=300)
@@ -101,13 +100,11 @@ class OrgActions(discord.ui.View):
         await self.bot.db.update_organization(self.org_id, level=org["level"]+1)
         await interaction.response.send_message(f"Организация улучшена до **LVL {org['level']+1}**!", ephemeral=True)
 
-    # НОВАЯ КНОПКА РЕДАКТИРОВАНИЯ
     @discord.ui.button(label="Настройки", style=discord.ButtonStyle.secondary, emoji="⚙️", row=1)
     async def edit_org(self, interaction: discord.Interaction, button: discord.ui.Button):
         org = await self.bot.db.get_organization(self.org_id)
         if not org or org["owner_id"] != interaction.user.id:
             return await interaction.response.send_message("Только владелец может менять настройки.", ephemeral=True)
-        
         await interaction.response.send_modal(OrgEditModal(self.bot, self.org_id, org["name"], org["logo_url"]))
 
 class DepositModal(discord.ui.Modal, title="Пополнение бюджета"):
