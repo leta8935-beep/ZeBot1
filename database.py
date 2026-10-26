@@ -25,6 +25,10 @@ class Database:
                 balance BIGINT DEFAULT 0, logo_url TEXT DEFAULT '', last_collect DOUBLE PRECISION DEFAULT 0,
                 created_at TIMESTAMPTZ DEFAULT NOW()
             );
+            CREATE TABLE IF NOT EXISTS org_members (
+                org_id INT, user_id BIGINT, rank TEXT DEFAULT 'Сотрудник',
+                PRIMARY KEY (org_id, user_id)
+            );
             """)
             await c.execute("ALTER TABLE guild_settings ADD COLUMN IF NOT EXISTS state_name TEXT DEFAULT 'РОССИЙСКАЯ ФЕДЕРАЦИЯ';")
             await c.execute("ALTER TABLE guild_settings ADD COLUMN IF NOT EXISTS state_name_en TEXT DEFAULT 'RUSSIAN FEDERATION';")
@@ -84,7 +88,21 @@ class Database:
 
     async def delete_organization(self, org_id: int):
         async with self.pool.acquire() as c:
+            await c.execute("DELETE FROM org_members WHERE org_id=$1", org_id)
             await c.execute("DELETE FROM organizations WHERE org_id=$1", org_id)
+
+    # ─── Сотрудники ───
+    async def add_org_member(self, org_id: int, user_id: int, rank: str = 'Сотрудник'):
+        async with self.pool.acquire() as c:
+            await c.execute("INSERT INTO org_members (org_id, user_id, rank) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING", org_id, user_id, rank)
+
+    async def remove_org_member(self, org_id: int, user_id: int):
+        async with self.pool.acquire() as c:
+            await c.execute("DELETE FROM org_members WHERE org_id=$1 AND user_id=$2", org_id, user_id)
+
+    async def get_org_members(self, org_id: int):
+        async with self.pool.acquire() as c:
+            return await c.fetch("SELECT * FROM org_members WHERE org_id=$1", org_id)
 
     async def save_passport(self, user_id, surname, name, patronymic, dob, pob, bio, photo_url):
         async with self.pool.acquire() as c:
