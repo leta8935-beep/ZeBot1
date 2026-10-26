@@ -261,7 +261,6 @@ class OrgReviewView(discord.ui.View):
         embed.color = discord.Color.green()
         embed.set_footer(text=f"Одобрено | Проверяющий: {interaction.user.name}")
 
-        # Создаем организацию в базе (используем старую функцию create_business)
         await interaction.client.db.create_business(self.target_user.id, self.data["name"], self.data["org_type"])
 
         try: await self.target_user.send(f"✅ Ваша заявка на организацию **{self.data['name']}** одобрена!")
@@ -286,16 +285,23 @@ class Registration(commands.Cog):
         p = await self.bot.db.get_passport(member.id)
         if not p: return await i.response.send_message("❌ Паспорт не найден.", ephemeral=True)
 
+        settings = await self.bot.db.get_guild_settings(i.guild.id)
+        state_name = settings["state_name"] if settings and settings["state_name"] else "РОССИЙСКАЯ ФЕДЕРАЦИЯ"
+        state_code = settings["state_code"] if settings and settings["state_code"] else "RUS"
+
         await i.response.defer()
         
-        # Био удалено из паспорта
         data = {
             "photo_url": p["photo_url"], 
             "surname": p["surname"], 
             "name": p["name"], 
             "patronymic": p["patronymic"], 
             "dob": p["dob"], 
-            "pob": p["pob"]
+            "pob": p["pob"],
+            "state_name": state_name.upper() + " / RUSSIAN FEDERATION",
+            "state_code": state_code.upper(),
+            "passport_number": str(member.id).zfill(10)[:10],
+            "discord_id": str(member.id)
         }
         
         try:
@@ -303,7 +309,7 @@ class Registration(commands.Cog):
             file = discord.File(fp=io.BytesIO(png), filename="passport.png")
             await i.followup.send(file=file)
         except Exception as e:
-            await i.followup.send(f"Ошибка рендера: {e}. {p['surname']} {p['name']}")
+            await i.followup.send(f"Ошибка рендера: {e}")
 
     @app_commands.command(name="edit_passport", description="[STAFF] Изменить паспорт")
     @is_staff()
@@ -355,5 +361,4 @@ class EditModal(discord.ui.Modal, title="Изменение"):
         await interaction.client.db.update_passport_field(self.member.id, self.field, self.value.value)
         await interaction.response.send_message("✅ Обновлено!", ephemeral=True)
 
-async def setup(bot): 
-    await bot.add_cog(Registration(bot))
+async def setup(bot): await bot.add_cog(Registration(bot))
