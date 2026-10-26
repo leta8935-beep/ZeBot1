@@ -91,7 +91,6 @@ class Database:
             await c.execute("DELETE FROM org_members WHERE org_id=$1", org_id)
             await c.execute("DELETE FROM organizations WHERE org_id=$1", org_id)
 
-    # ─── Сотрудники ───
     async def add_org_member(self, org_id: int, user_id: int, rank: str = 'Сотрудник'):
         async with self.pool.acquire() as c:
             await c.execute("INSERT INTO org_members (org_id, user_id, rank) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING", org_id, user_id, rank)
