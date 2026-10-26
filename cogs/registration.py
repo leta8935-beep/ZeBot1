@@ -286,7 +286,8 @@ class Registration(commands.Cog):
         if not p: return await i.response.send_message("❌ Паспорт не найден.", ephemeral=True)
 
         settings = await self.bot.db.get_guild_settings(i.guild.id)
-        state_name = settings["state_name"] if settings and settings["state_name"] else "РОССИЙСКАЯ ФЕДЕРАЦИЯ"
+        state_ru = settings["state_name"] if settings and settings["state_name"] else "РОССИЙСКАЯ ФЕДЕРАЦИЯ"
+        state_en = settings["state_name_en"] if settings and settings["state_name_en"] else "RUSSIAN FEDERATION"
         state_code = settings["state_code"] if settings and settings["state_code"] else "RUS"
 
         await i.response.defer()
@@ -298,7 +299,7 @@ class Registration(commands.Cog):
             "patronymic": p["patronymic"], 
             "dob": p["dob"], 
             "pob": p["pob"],
-            "state_name": state_name.upper() + " / RUSSIAN FEDERATION",
+            "state_name": f"{state_ru.upper()} / {state_en.upper()}",
             "state_code": state_code.upper(),
             "passport_number": str(member.id).zfill(10)[:10],
             "discord_id": str(member.id)
@@ -361,4 +362,5 @@ class EditModal(discord.ui.Modal, title="Изменение"):
         await interaction.client.db.update_passport_field(self.member.id, self.field, self.value.value)
         await interaction.response.send_message("✅ Обновлено!", ephemeral=True)
 
-async def setup(bot): await bot.add_cog(Registration(bot))
+async def setup(bot): 
+    await bot.add_cog(Registration(bot))
