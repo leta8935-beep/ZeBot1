@@ -5,6 +5,41 @@ from utils.checks import is_staff
 
 def fmt(n: int) -> str: return f"{n:,}".replace(",", " ")
 
+class EditOrgSelectView(discord.ui.View):
+    def __init__(self, bot, org_id: int):
+        super().__init__(timeout=60)
+        self.bot = bot
+        self.org_id = org_id
+
+    @discord.ui.select(placeholder="Что изменить?", options=[
+        discord.SelectOption(label="Название", value="name"),
+        discord.SelectOption(label="Логотип", value="logo_url"),
+        discord.SelectOption(label="Сфера", value="sphere"),
+        discord.SelectOption(label="Уровень", value="level"),
+    ])
+    async def select_field(self, interaction: discord.Interaction, select: discord.ui.Select):
+        field = select.values[0]
+        await interaction.response.send_modal(AdminEditOrgModal(self.bot, self.org_id, field))
+
+class AdminEditOrgModal(discord.ui.Modal, title="Редактирование организации"):
+    value = discord.ui.TextInput(label="Новое значение")
+
+    def __init__(self, bot, org_id: int, field: str):
+        super().__init__()
+        self.bot = bot
+        self.org_id = org_id
+        self.field = field
+        self.value.label = f"Новое значение для '{field}'"
+
+    async def on_submit(self, interaction: discord.Interaction):
+        try:
+            val = int(self.value.value) if self.field == "level" else self.value.value
+            async with self.bot.db.pool.acquire() as c:
+                await c.execute(f"UPDATE organizations SET {self.field}=$1 WHERE org_id=$2", val, self.org_id)
+            await interaction.response.send_message(f"✅ Поле `{self.field}` обновлено!", ephemeral=True)
+        except ValueError:
+            await interaction.response.send_message("Ошибка: уровень должен быть числом.", ephemeral=True)
+
 class Admin(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -28,23 +63,14 @@ class Admin(commands.Cog):
         embed = discord.Embed(title="Баланс изменен", color=0xEB459E, description=f"**Игрок:** {member.mention}\n**Новый баланс:** {fmt(u['wallet'])} 💰")
         await i.response.send_message(embed=embed, ephemeral=True)
 
-    @app_commands.command(name="create_org", description="[STAFF] Создать организацию для игрока")
+    @app_commands.command(name="edit_org", description="[STAFF] Редактировать организацию по ID")
     @is_staff()
-    @app_commands.choices(org_type=[
-        app_commands.Choice(name="СМИ", value="СМИ"),
-        app_commands.Choice(name="Бизнес", value="Бизнес"),
-        app_commands.Choice(name="НКО / Фонд", value="НКО"),
-        app_commands.Choice(name="Корпорация", value="Корпорация")
-    ])
-    async def create_org(self, i: discord.Interaction, member: discord.Member, name: str, org_type: app_commands.Choice[str]):
-        existing = await self.bot.db.get_business(member.id)
-        if existing:
-            return await i.response.send_message("❌ У этого игрока уже есть организация.", ephemeral=True)
+    async def edit_org(self, i: discord.Interaction, org_id: int):
+        org = await self.bot.db.get_organization(org_id)
+        if not org:
+            return await i.response.send_message("Организация с таким ID не найдена.", ephemeral=True)
         
-        await self.bot.db.create_business(member.id, name, org_type.value)
-        embed = discord.Embed(title="🏢 Организация создана", color=0x57F287)
-        embed.description = f"Владелец: {member.mention}\nНазвание: **{name}**\nТип: **{org_type.value}**"
-        await i.response.send_message(embed=embed)
+        await i.response.send_message(f"Выберите поле для изменения у **{org['name']}**:", view=EditOrgSelectView(self.bot, org_id), ephemeral=True)
 
     async def cog_app_command_error(self, i, error):
         if isinstance(error, app_commands.CheckFailure): await i.response.send_message(f"🚫 {error}", ephemeral=True)
