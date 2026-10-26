@@ -24,7 +24,7 @@ class RegModalStep1(discord.ui.Modal, title="Регистрация (Шаг 1 и
 
 class RegModalStep2(discord.ui.Modal, title="Регистрация (Шаг 2 из 2)"):
     bio = discord.ui.TextInput(label="Биография", style=discord.TextStyle.paragraph, max_length=1000)
-    photo_url = discord.ui.TextInput(label="Ссылка на фото", placeholder="https://...", max_length=200)
+    photo_url = discord.ui.TextInput(label="Ссылка на фото", placeholder="https://...", max_length=300)
 
     async def on_submit(self, interaction: discord.Interaction):
         data = interaction.client.temp_reg_data.get(interaction.user.id)
@@ -179,7 +179,7 @@ class StaffReviewView(discord.ui.View):
         await interaction.message.delete()
 
 # ═══════════════════════════════════════════════════
-# 3. ЗАЯВКА НА ОРГАНИЗАЦИЮ (2 шага)
+# 3. ЗАЯВКА НА ОРГАНИЗАЦИЮ (С ЛОГОТИПОМ)
 # ═══════════════════════════════════════════════════
 class OrgModalStep1(discord.ui.Modal, title="Заявка на организацию (Шаг 1 из 2)"):
     name = discord.ui.TextInput(label="Название организации", placeholder="ООО 'Ромашка'", max_length=50)
@@ -196,9 +196,9 @@ class OrgModalStep1(discord.ui.Modal, title="Заявка на организа�
         await interaction.response.send_message("Шаг 1 из 2 завершен. Нажмите кнопку ниже.", ephemeral=True, view=OrgNextStepView())
 
 class OrgModalStep2(discord.ui.Modal, title="Заявка на организацию (Шаг 2 из 2)"):
+    logo_url = discord.ui.TextInput(label="Ссылка на логотип", placeholder="https://...", max_length=300)
     products = discord.ui.TextInput(label="Продукция / Услуги", style=discord.TextStyle.paragraph, max_length=500)
     partners = discord.ui.TextInput(label="Партнёры / Конкуренты", style=discord.TextStyle.paragraph, max_length=500)
-    branding = discord.ui.TextInput(label="Символика / Основные цвета", placeholder="Логотип, цвета", max_length=200)
     ownership = discord.ui.TextInput(label="Форма собственности", placeholder="Частная, государственная...", max_length=100)
     funding = discord.ui.TextInput(label="Источники финансирования", placeholder="Инвестиции, бюджет...", max_length=200)
 
@@ -221,9 +221,14 @@ class OrgModalStep2(discord.ui.Modal, title="Заявка на организа�
         embed.add_field(name="Состав", value=data["staff"], inline=False)
         embed.add_field(name="Услуги", value=self.products.value, inline=False)
         embed.add_field(name="Партнёры", value=self.partners.value, inline=False)
-        embed.add_field(name="Символика", value=self.branding.value, inline=True)
         embed.add_field(name="Собственность", value=self.ownership.value, inline=True)
         embed.add_field(name="Финансирование", value=self.funding.value, inline=True)
+        
+        # Отображаем логотип в эмбеде заявки
+        embed.set_thumbnail(url=self.logo_url.value)
+        
+        # Сохраняем ссылку на логотип в данные для дальнейшего использования
+        data["logo_url"] = self.logo_url.value
 
         view = OrgReviewView(target_user=interaction.user, data=data)
         await review_channel.send(content=f"🏢 Заявка от {interaction.user.mention}", embed=embed, view=view)
@@ -244,8 +249,7 @@ class OrgRegistrationView(discord.ui.View):
 
     @discord.ui.button(label="Подать заявку на организацию", style=discord.ButtonStyle.green, custom_id="start_org_registration")
     async def start_org_reg(self, interaction: discord.Interaction, button: discord.ui.Button):
-        biz = await interaction.client.db.get_business(interaction.user.id)
-        if biz: return await interaction.response.send_message("❌ У вас уже есть организация!", ephemeral=True)
+        # Теперь можно создавать несколько организаций, поэтому проверку на наличие убираем
         await interaction.response.send_modal(OrgModalStep1())
 
 class OrgReviewView(discord.ui.View):
@@ -261,7 +265,14 @@ class OrgReviewView(discord.ui.View):
         embed.color = discord.Color.green()
         embed.set_footer(text=f"Одобрено | Проверяющий: {interaction.user.name}")
 
-        await interaction.client.db.create_business(self.target_user.id, self.data["name"], self.data["org_type"])
+        # Создаем организацию в новой таблице organizations с логотипом
+        await interaction.client.db.create_organization(
+            self.target_user.id, 
+            self.data["name"], 
+            self.data["org_type"], 
+            self.data["sphere"],
+            self.data["logo_url"]
+        )
 
         try: await self.target_user.send(f"✅ Ваша заявка на организацию **{self.data['name']}** одобрена!")
         except: pass
