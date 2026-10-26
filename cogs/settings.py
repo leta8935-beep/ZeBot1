@@ -7,9 +7,17 @@ class Settings(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    @app_commands.command(name="set_state", description="[STAFF] Установить название и код государства")
+    @is_staff()
+    async def set_state(self, i: discord.Interaction, name: str, code: str):
+        await self.bot.db.set_guild_setting(i.guild.id, "state_name", name.upper())
+        await self.bot.db.set_guild_setting(i.guild.id, "state_code", code.upper())
+        await i.response.send_message(f"✅ Государство: **{name.upper()}**, код: **{code.upper()}**", ephemeral=True)
+
     @app_commands.command(name="set_manager", description="[OWNER] Назначить менеджера бота")
     async def set_manager(self, i: discord.Interaction, member: discord.Member):
-        if i.user.id != i.guild.owner_id: return await i.response.send_message("❌ Только владелец.", ephemeral=True)
+        if i.user.id != i.guild.owner_id: 
+            return await i.response.send_message("❌ Только владелец.", ephemeral=True)
         await self.bot.db.set_guild_setting(i.guild.id, "manager_id", member.id)
         await i.response.send_message(f"👑 {member.mention} теперь менеджер бота.")
 
@@ -29,7 +37,7 @@ class Settings(commands.Cog):
     @app_commands.choices(message_type=[
         app_commands.Choice(name="Регистрация", value="registration"),
         app_commands.Choice(name="Набор в Стафф", value="staff_registration"),
-        app_commands.Choice(name="Заявка на Организацию", value="org_registration") # Переименовали
+        app_commands.Choice(name="Заявка на Организацию", value="org_registration")
     ])
     async def idtext(self, i: discord.Interaction, channel: discord.TextChannel, message_type: app_commands.Choice[str], text: str = "Нажмите кнопку ниже.", image_file: discord.Attachment = None, image_url: str = None):
         embed = discord.Embed(title="📋 Заявка", description=text, color=discord.Color.blue())
@@ -37,7 +45,8 @@ class Settings(commands.Cog):
         if image_file:
             file = await image_file.to_file()
             embed.set_image(url=f"attachment://{file.filename}")
-        elif image_url: embed.set_image(url=image_url)
+        elif image_url: 
+            embed.set_image(url=image_url)
 
         from cogs.registration import RegistrationView, StaffRegistrationView, OrgRegistrationView
         
