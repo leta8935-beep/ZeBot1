@@ -6,77 +6,31 @@ class Database:
         self.pool = None
 
     async def connect(self):
-        # Создаем пул соединений с ПОЛНЫМ отключением кэша запросов.
-        # Это критически важно для работы с пулером Supabase (порт 6543), 
-        # иначе бот падает с ошибкой DuplicatePreparedStatementError.
         self.pool = await asyncpg.create_pool(
-            self.dsn, 
-            min_size=1, 
-            max_size=5, 
-            statement_cache_size=0,
-            max_cached_statement_lifetime=0
+            self.dsn, min_size=1, max_size=5,
+            statement_cache_size=0, max_cached_statement_lifetime=0
         )
-        
         async with self.pool.acquire() as c:
-            # 1. Базовые таблицы (экономика)
             await c.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-                user_id BIGINT PRIMARY KEY, 
-                wallet BIGINT NOT NULL DEFAULT 500
-            );
-            CREATE TABLE IF NOT EXISTS transactions (
-                id SERIAL PRIMARY KEY, 
-                from_id BIGINT, 
-                to_id BIGINT, 
-                amount BIGINT NOT NULL, 
-                kind TEXT NOT NULL
-            );
-            """)
-            
-            # 2. Паспорта
-            await c.execute("""
+            CREATE TABLE IF NOT EXISTS users (user_id BIGINT PRIMARY KEY, wallet BIGINT NOT NULL DEFAULT 500);
+            CREATE TABLE IF NOT EXISTS transactions (id SERIAL PRIMARY KEY, from_id BIGINT, to_id BIGINT, amount BIGINT NOT NULL, kind TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS passports (
-                user_id BIGINT PRIMARY KEY, 
-                surname TEXT NOT NULL, 
-                name TEXT NOT NULL, 
-                patronymic TEXT NOT NULL,
-                dob TEXT NOT NULL, 
-                pob TEXT NOT NULL, 
-                bio TEXT NOT NULL, 
-                photo_url TEXT NOT NULL, 
-                created_at TIMESTAMPTZ DEFAULT NOW()
+                user_id BIGINT PRIMARY KEY, surname TEXT NOT NULL, name TEXT NOT NULL, patronymic TEXT NOT NULL,
+                dob TEXT NOT NULL, pob TEXT NOT NULL, bio TEXT NOT NULL, photo_url TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT NOW()
             );
-            """)
-
-            # 3. Настройки сервера
-            await c.execute("""
-            CREATE TABLE IF NOT EXISTS guild_settings (
-                guild_id BIGINT PRIMARY KEY, 
-                review_channel_id BIGINT, 
-                start_roles TEXT
-            );
-            """)
-
-            # 4. Организации (бизнесы)
-            await c.execute("""
+            CREATE TABLE IF NOT EXISTS guild_settings (guild_id BIGINT PRIMARY KEY, review_channel_id BIGINT, start_roles TEXT);
             CREATE TABLE IF NOT EXISTS businesses (
-                biz_id SERIAL PRIMARY KEY, 
-                owner_id BIGINT UNIQUE, 
-                name TEXT NOT NULL, 
-                activity TEXT, 
-                level INT DEFAULT 1,
+                biz_id SERIAL PRIMARY KEY, owner_id BIGINT UNIQUE, name TEXT NOT NULL, activity TEXT, level INT DEFAULT 1,
                 last_collect DOUBLE PRECISION DEFAULT 0
             );
             """)
-
-            # 5. Безопасное добавление новых колонок (чтобы не сломать старую БД)
             await c.execute("ALTER TABLE guild_settings ADD COLUMN IF NOT EXISTS curator_role BIGINT;")
             await c.execute("ALTER TABLE guild_settings ADD COLUMN IF NOT EXISTS mod_role BIGINT;")
             await c.execute("ALTER TABLE guild_settings ADD COLUMN IF NOT EXISTS admin_role BIGINT;")
             await c.execute("ALTER TABLE guild_settings ADD COLUMN IF NOT EXISTS pr_role BIGINT;")
             await c.execute("ALTER TABLE guild_settings ADD COLUMN IF NOT EXISTS manager_id BIGINT;")
-            
-            # Добавляем колонку activity в businesses, если её нет
+            await c.execute("ALTER TABLE guild_settings ADD COLUMN IF NOT EXISTS state_name TEXT DEFAULT 'РОССИЙСКАЯ ФЕДЕРАЦИЯ';")
+            await c.execute("ALTER TABLE guild_settings ADD COLUMN IF NOT EXISTS state_code TEXT DEFAULT 'RUS';")
             await c.execute("ALTER TABLE businesses ADD COLUMN IF NOT EXISTS activity TEXT;")
 
     # ─── Экономика ───
@@ -108,10 +62,8 @@ class Database:
 
     async def update_business(self, biz_id: int, level: int = None, last_collect: float = None):
         async with self.pool.acquire() as c:
-            if level is not None: 
-                await c.execute("UPDATE businesses SET level=$1 WHERE biz_id=$2", level, biz_id)
-            if last_collect is not None: 
-                await c.execute("UPDATE businesses SET last_collect=$1 WHERE biz_id=$2", last_collect, biz_id)
+            if level is not None: await c.execute("UPDATE businesses SET level=$1 WHERE biz_id=$2", level, biz_id)
+            if last_collect is not None: await c.execute("UPDATE businesses SET last_collect=$1 WHERE biz_id=$2", last_collect, biz_id)
 
     # ─── Паспорт ───
     async def save_passport(self, user_id, surname, name, patronymic, dob, pob, bio, photo_url):
@@ -119,8 +71,7 @@ class Database:
             await c.execute("""
                 INSERT INTO passports (user_id, surname, name, patronymic, dob, pob, bio, photo_url)
                 VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-                ON CONFLICT (user_id) DO UPDATE SET 
-                surname=$2, name=$3, patronymic=$4, dob=$5, pob=$6, bio=$7, photo_url=$8
+                ON CONFLICT (user_id) DO UPDATE SET surname=$2, name=$3, patronymic=$4, dob=$5, pob=$6, bio=$7, photo_url=$8
             """, user_id, surname, name, patronymic, dob, pob, bio, photo_url)
 
     async def get_passport(self, user_id: int):
@@ -129,17 +80,18 @@ class Database:
 
     async def update_passport_field(self, user_id: int, field: str, value: str):
         allowed_fields = ["surname", "name", "patronymic", "dob", "pob", "bio", "photo_url"]
-        if field not in allowed_fields: 
-            return False
+        if field not in allowed_fields: return False
         async with self.pool.acquire() as c:
             await c.execute(f"UPDATE passports SET {field}=$1 WHERE user_id=$2", value, user_id)
         return True
 
     # ─── Настройки ───
     async def set_guild_setting(self, guild_id: int, column: str, value):
-        allowed_columns = ["review_channel_id", "start_roles", "curator_role", "mod_role", "admin_role", "pr_role", "manager_id"]
-        if column not in allowed_columns: 
-            return
+        allowed_columns = [
+            "review_channel_id", "start_roles", "curator_role", "mod_role",
+            "admin_role", "pr_role", "manager_id", "state_name", "state_code"
+        ]
+        if column not in allowed_columns: return
         async with self.pool.acquire() as c:
             exists = await c.fetchval("SELECT 1 FROM guild_settings WHERE guild_id=$1", guild_id)
             if not exists: 
