@@ -99,7 +99,7 @@ class ManageOrgActions(discord.ui.View):
 class AdminOrgSelect(discord.ui.Select):
     def __init__(self, bot, orgs):
         options = [
-            discord.SelectOption(label=o['name'], value=str(o['org_id']), description=f"ID: {o['org_id']} | Владелец: {o['owner_id']}")
+            discord.SelectOption(label=o['name'], value=str(o['org_id']), description=f"Тип: {o['org_type']} | Владелец: {o['owner_id']}")
             for o in orgs
         ]
         super().__init__(placeholder="Выберите организацию для управления...", options=options)
@@ -110,7 +110,6 @@ class AdminOrgSelect(discord.ui.Select):
         org = await self.bot.db.get_organization(org_id)
         
         embed = discord.Embed(title=f"Управление: {org['name']}", color=0x5865F2)
-        embed.add_field(name="ID", value=str(org['org_id']), inline=True)
         embed.add_field(name="Владелец", value=f"<@{org['owner_id']}>", inline=True)
         embed.add_field(name="Тип", value=org['org_type'], inline=True)
         embed.add_field(name="Уровень", value=str(org['level']), inline=True)
@@ -143,7 +142,13 @@ class Admin(commands.Cog):
         embed = discord.Embed(title="Баланс изменен", color=0xEB459E, description=f"**Игрок:** {member.mention}\n**Новый баланс:** {fmt(u['wallet'])} 💰")
         await i.response.send_message(embed=embed, ephemeral=True)
 
-    @app_commands.command(name="manage_org", description="[STAFF] Полное управление организациями")
+    @app_commands.command(name="create_org", description="[STAFF] Создать организацию для игрока")
+    @is_staff()
+    async def create_org(self, i: discord.Interaction, member: discord.Member, name: str, org_type: str = "Бизнес"):
+        await self.bot.db.create_organization(member.id, name, org_type, "Не указана", "")
+        await i.response.send_message(f"✅ Организация **{name}** создана для {member.mention}!", ephemeral=True)
+
+    @app_commands.command(name="manage_org", description="[STAFF] Меню управления организациями")
     @is_staff()
     async def manage_org(self, i: discord.Interaction):
         orgs = await self.bot.db.get_all_organizations()
@@ -153,7 +158,7 @@ class Admin(commands.Cog):
         view = discord.ui.View()
         view.add_item(AdminOrgSelect(self.bot, orgs))
         
-        embed = discord.Embed(title="🏢 Управление организациями", description="Выберите организацию из списка ниже, чтобы просмотреть её данные и изменить настройки.", color=0x2b2d31)
+        embed = discord.Embed(title="🏢 Управление организациями", description="Выберите организацию из списка по названию.", color=0x2b2d31)
         await i.response.send_message(embed=embed, view=view, ephemeral=True)
 
     async def cog_app_command_error(self, i, error):
