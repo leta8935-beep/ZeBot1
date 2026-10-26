@@ -4,84 +4,80 @@
 <meta charset="UTF-8">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  /* Задаем размеры холста ровно под размер твоего фона */
-  body { width: 1064px; height: 1478px; background: transparent; overflow: hidden; }
+  /* Родной размер SVG — 720x1000. Playwright сделает скриншот в 2х качестве */
+  body { width: 720px; height: 1000px; background: transparent; overflow: hidden; }
   svg { display: block; width: 100%; height: 100%; }
 </style>
 </head>
 <body>
-<!-- width и height ставим 1064x1478, а viewBox оставляем оригинальный 720x1000 -->
-<svg id="passport-svg" xmlns="http://www.w3.org/2000/svg" width="1064" height="1478" viewBox="0 0 1064 1478">
+<svg id="passport-svg" xmlns="http://www.w3.org/2000/svg" width="720" height="1000" viewBox="0 0 720 1000">
   
-  <!-- Благодаря этой строке мы возвращаем оригинальные координаты (x=50, y=548 и т.д.) -->
-  <g transform="scale(1.4777777777777779, 1.478) translate(0, 0)">
+  <!-- 1. ФОН ПАСПОРТА (Растянут ровно на 720x1000) -->
+  <image href="https://raw.githubusercontent.com/leta8935-beep/ZeBot/main/assets/passport_bg.png" x="0" y="0" width="720" height="1000" preserveAspectRatio="xMidYMid slice" />
 
-    <!-- 1. ФОН ПАСПОРТА (Растягиваем на 720x1000) -->
-    <image href="https://raw.githubusercontent.com/leta8935-beep/ZeBot/main/assets/passport_bg.png" x="0" y="0" width="720" height="1000" preserveAspectRatio="xMidYMid slice" />
+  <!-- Стили для текста -->
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&amp;display=swap');
+    text { font-family: 'Montserrat', 'Arial', sans-serif; }
+    .ttl { font-size: 16.5px; font-weight: 700; fill: #000; }
+    .lbl { font-size: 10.5px; font-weight: 400; fill: #1f2233; }
+    .val { font-size: 10.5px; font-weight: 700; fill: #000; }
+    .mrz { font-size: 16.5px; font-weight: 400; fill: #1a1c2e; letter-spacing: 0; }
+  </style>
 
-    <style>
-      @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&amp;display=swap');
-      text { font-family: 'Montserrat', 'Arial', sans-serif; }
-      .ttl { font-size: 16.5px; font-weight: 700; fill: #000; }
-      .lbl { font-size: 10.5px; font-weight: 400; fill: #1f2233; }
-      .val { font-size: 10.5px; font-weight: 700; fill: #000; }
-      .mrz { font-size: 16.5px; font-weight: 400; fill: #1a1c2e; letter-spacing: 0; }
-    </style>
+  <!-- 2. ФОТО ПОЛЬЗОВАТЕЛЯ -->
+  <image id="photo" x="49" y="618" width="166" height="220" preserveAspectRatio="xMidYMid slice" href="" />
 
-    <!-- 2. ФОТО ПОЛЬЗОВАТЕЛЯ (Оригинальные координаты) -->
-    <image id="photo" x="49" y="618" width="166" height="220" preserveAspectRatio="xMidYMid slice" href="" />
+  <!-- ЗАГОЛОВОК -->
+  <text class="ttl" x="50" y="548" textLength="455" lengthAdjust="spacing" id="country_title">РОССИЙСКАЯ ФЕДЕРАЦИЯ/RUSSIAN FEDERATION</text>
 
-    <!-- ЗАГОЛОВОК (Оригинальные координаты) -->
-    <text class="ttl" x="50" y="548" textLength="455" lengthAdjust="spacing" id="country_title">РОССИЙСКАЯ ФЕДЕРАЦИЯ/RUSSIAN FEDERATION</text>
+  <!-- СТРОКА 1 -->
+  <text class="lbl" x="52" y="574" textLength="93" lengthAdjust="spacing">Паспорт/Passport</text>
+  <text class="lbl" x="163" y="574" textLength="46" lengthAdjust="spacing">Тип/Type</text>
+  <text class="lbl" x="228" y="574" textLength="242" lengthAdjust="spacing">Код государства выдачи/Code of issuing State</text>
+  <text class="lbl" x="488" y="574" textLength="183" lengthAdjust="spacing">Номер паспорта /Passport number</text>
 
-    <!-- СТРОКА 1 -->
-    <text class="lbl" x="52" y="574" textLength="93" lengthAdjust="spacing">Паспорт/Passport</text>
-    <text class="lbl" x="163" y="574" textLength="46" lengthAdjust="spacing">Тип/Type</text>
-    <text class="lbl" x="228" y="574" textLength="242" lengthAdjust="spacing">Код государства выдачи/Code of issuing State</text>
-    <text class="lbl" x="488" y="574" textLength="183" lengthAdjust="spacing">Номер паспорта /Passport number</text>
+  <text class="val" x="162" y="588" id="passport_type">P</text>
+  <text class="val" x="228" y="588" id="state_code">RUS</text>
+  <text class="val" x="488" y="588" id="passport_number">00 0000036</text>
 
-    <text class="val" x="162" y="588" id="passport_type">P</text>
-    <text class="val" x="228" y="588" id="state_code">RUS</text>
-    <text class="val" x="488" y="588" id="passport_number">00 0000036</text>
+  <!-- СТРОКА 2 -->
+  <text class="lbl" x="228" y="626" textLength="100" lengthAdjust="spacing">Фамилия/Surname</text>
+  <text class="lbl" x="450" y="626" textLength="150" lengthAdjust="spacing">Дата рождения/Date of birth</text>
+  <text class="val" x="228" y="643" id="surname">ATLASOV</text>
+  <text class="val" x="450" y="643" id="dob">03.03.2020</text>
 
-    <!-- СТРОКА 2 -->
-    <text class="lbl" x="228" y="626" textLength="100" lengthAdjust="spacing">Фамилия/Surname</text>
-    <text class="lbl" x="450" y="626" textLength="150" lengthAdjust="spacing">Дата рождения/Date of birth</text>
-    <text class="val" x="228" y="643" id="surname">ATLASOV</text>
-    <text class="val" x="450" y="643" id="dob">03.03.2020</text>
+  <!-- СТРОКА 3 -->
+  <text class="lbl" x="228" y="665" textLength="57" lengthAdjust="spacing">Имя/Name</text>
+  <text class="lbl" x="450" y="665" textLength="160" lengthAdjust="spacing">Место рождения/Place of birth</text>
+  <text class="val" x="228" y="682" id="name">TIM</text>
+  <text class="val" x="450" y="682" id="pob">Г.МОСКВА / MOSCOW</text>
 
-    <!-- СТРОКА 3 -->
-    <text class="lbl" x="228" y="665" textLength="57" lengthAdjust="spacing">Имя/Name</text>
-    <text class="lbl" x="450" y="665" textLength="160" lengthAdjust="spacing">Место рождения/Place of birth</text>
-    <text class="val" x="228" y="682" id="name">TIM</text>
-    <text class="val" x="450" y="682" id="pob">Г.МОСКВА / MOSCOW</text>
+  <!-- СТРОКА 4 -->
+  <text class="lbl" x="228" y="704" textLength="127" lengthAdjust="spacing">Гражданство/Nationality</text>
+  <text class="val" x="228" y="720" id="nationality">РОССИЙСКАЯ ФЕДЕРАЦИЯ /RUSSIAN FEDERATION</text>
 
-    <!-- СТРОКА 4 -->
-    <text class="lbl" x="228" y="704" textLength="127" lengthAdjust="spacing">Гражданство/Nationality</text>
-    <text class="val" x="228" y="720" id="nationality">РОССИЙСКАЯ ФЕДЕРАЦИЯ /RUSSIAN FEDERATION</text>
+  <!-- СТРОКА 5 -->
+  <text class="lbl" x="228" y="742" textLength="136" lengthAdjust="spacing">Дата выдачи/Date of issue</text>
+  <text class="lbl" x="450" y="742" textLength="82" lengthAdjust="spacing">Учетная запись</text>
+  <text class="val" x="228" y="759">—</text>
+  <text class="val" x="450" y="759" id="discord_id">123456789012345678</text>
 
-    <!-- СТРОКА 5 -->
-    <text class="lbl" x="228" y="742" textLength="136" lengthAdjust="spacing">Дата выдачи/Date of issue</text>
-    <text class="lbl" x="450" y="742" textLength="82" lengthAdjust="spacing">Учетная запись</text>
-    <text class="val" x="228" y="759">—</text>
-    <text class="val" x="450" y="759" id="discord_id">123456789012345678</text>
+  <!-- СТРОКА 6 -->
+  <text class="lbl" x="228" y="781" textLength="203" lengthAdjust="spacing">Дата окончания срока /Expiration date</text>
+  <text class="lbl" x="450" y="781" textLength="199" lengthAdjust="spacing">Орган выдавший документ /Authority</text>
+  <text class="val" x="228" y="797">—</text>
+  <text class="val" x="450" y="797">Миграционная Служба</text>
 
-    <!-- СТРОКА 6 -->
-    <text class="lbl" x="228" y="781" textLength="203" lengthAdjust="spacing">Дата окончания срока /Expiration date</text>
-    <text class="lbl" x="450" y="781" textLength="199" lengthAdjust="spacing">Орган выдавший документ /Authority</text>
-    <text class="val" x="228" y="797">—</text>
-    <text class="val" x="450" y="797">Миграционная Служба</text>
+  <!-- СТРОКА 7 -->
+  <text class="lbl" x="228" y="821" textLength="42" lengthAdjust="spacing">Пол/Sex</text>
+  <text class="lbl" x="450" y="821" textLength="204" lengthAdjust="spacing">Подпись владельца /Owner's signature</text>
+  <text class="val" x="228" y="837">M/M</text>
+  <text class="val" x="450" y="837" id="signature"></text>
 
-    <!-- СТРОКА 7 -->
-    <text class="lbl" x="228" y="821" textLength="42" lengthAdjust="spacing">Пол/Sex</text>
-    <text class="lbl" x="450" y="821" textLength="204" lengthAdjust="spacing">Подпись владельца /Owner's signature</text>
-    <text class="val" x="228" y="837">M/M</text>
-    <text class="val" x="450" y="837" id="signature"></text>
-
-    <!-- MRZ -->
-    <text class="mrz" x="50" y="928" textLength="624" lengthAdjust="spacing" id="mrz1"></text>
-    <text class="mrz" x="50" y="951" textLength="624" lengthAdjust="spacing" id="mrz2"></text>
-  </g>
+  <!-- MRZ -->
+  <text class="mrz" x="50" y="928" textLength="624" lengthAdjust="spacing" id="mrz1"></text>
+  <text class="mrz" x="50" y="951" textLength="624" lengthAdjust="spacing" id="mrz2"></text>
 </svg>
 
 <script>
