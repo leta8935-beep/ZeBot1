@@ -17,3 +17,6 @@ MARKET_COMMISSION = float(os.getenv("MARKET_COMMISSION", "0.07"))
 BANK_INTEREST = float(os.getenv("BANK_INTEREST", "0.02"))
 XP_PER_MESSAGE = int(os.getenv("XP_PER_MESSAGE", "5"))
 XP_COOLDOWN = int(os.getenv("XP_COOLDOWN", "60"))
+
+MEDIA_STORAGE_URL = os.getenv('MEDIA_STORAGE_URL', '')
+MEDIA_STORAGE_TOKEN = os.getenv('MEDIA_STORAGE_TOKEN', '')
