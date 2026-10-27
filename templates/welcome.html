@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:1200px;height:630px;overflow:hidden}
+body{font-family:Inter,Arial,sans-serif;background:#090d18;color:#fff}
+.bg{position:absolute;inset:0;background:
+ radial-gradient(circle at 82% 18%,rgba(95,92,255,.42),transparent 30%),
+ radial-gradient(circle at 15% 88%,rgba(0,210,255,.22),transparent 34%),
+ linear-gradient(135deg,#090d18,#10172a 55%,#15112d)}
+.grid{position:absolute;inset:0;opacity:.13;background-image:linear-gradient(rgba(255,255,255,.22) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.22) 1px,transparent 1px);background-size:40px 40px}
+.card{position:absolute;left:52px;right:52px;top:46px;bottom:46px;border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.075);border-radius:34px;padding:42px 48px;box-shadow:0 30px 80px rgba(0,0,0,.45)}
+.top{display:flex;align-items:center;gap:24px}
+.server{width:74px;height:74px;border-radius:22px;object-fit:cover;border:2px solid rgba(255,255,255,.2)}
+.serverName{font-size:20px;font-weight:700;color:#b8c0d8}
+.title{margin-top:58px;font-size:58px;line-height:1;font-weight:900;letter-spacing:-2px}
+.title span{background:linear-gradient(90deg,#fff,#b9b7ff);-webkit-background-clip:text;color:transparent}
+.subtitle{margin-top:18px;font-size:24px;color:#aab3c9}
+.member{position:absolute;right:48px;bottom:38px;display:flex;align-items:center;gap:18px}
+.avatar{width:118px;height:118px;border-radius:38px;object-fit:cover;border:4px solid rgba(255,255,255,.2);box-shadow:0 12px 35px rgba(0,0,0,.35)}
+.name{font-size:26px;font-weight:800}.count{font-size:16px;color:#aab3c9;margin-top:7px}
+.accent{position:absolute;width:210px;height:210px;border-radius:50%;right:-80px;top:-80px;background:rgba(119,102,255,.22);filter:blur(10px)}
+</style>
+</head>
+<body>
+<div class="bg"></div><div class="grid"></div>
+<div class="card">
+  <div class="accent"></div>
+  <div class="top">
+    <img id="server" class="server" src="">
+    <div class="serverName" id="serverName">Сервер</div>
+  </div>
+  <div class="title">Добро пожаловать,<br><span id="memberName">Игрок</span>!</div>
+  <div class="subtitle">Рады видеть тебя в нашем государстве. Осваивайся и приятной игры ✨</div>
+  <div class="member">
+    <div>
+      <div class="name" id="name2">Игрок</div>
+      <div class="count" id="count">Участник №1</div>
+    </div>
+    <img id="avatar" class="avatar" src="">
+  </div>
+</div>
+<script>
+window.renderData=(d)=>{
+  document.getElementById('server').src=d.server_icon||'';
+  document.getElementById('serverName').textContent=d.server_name||'Наш сервер';
+  document.getElementById('memberName').textContent=d.member_name||'Игрок';
+  document.getElementById('name2').textContent=d.member_name||'Игрок';
+  document.getElementById('count').textContent='Участников на сервере: '+(d.member_count||0);
+  document.getElementById('avatar').src=d.avatar||'';
+}
+</script>
+</body>
+</html>

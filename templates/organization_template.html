@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Organization Card</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&display=swap');
+* { box-sizing: border-box; }
+body { font-family: 'Montserrat', sans-serif; margin: 0; padding: 20px; background: #fff; }
+.card {
+    width: 900px; margin: 0 auto; border-radius: 24px; overflow: hidden;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.25); background: #fff;
+}
+.card-hero {
+    height: 260px; position: relative;
+    background-size: cover; background-position: center;
+    display: flex; align-items: flex-end; padding: 25px; color: #fff;
+}
+.card-hero::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.75) 100%);
+}
+.card-logo {
+    position: absolute; top: 20px; left: 20px; z-index: 3;
+    width: 100px; height: 100px; border-radius: 20px;
+    background-size: cover; background-position: center; background-repeat: no-repeat;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4); border: 4px solid rgba(255,255,255,0.9);
+}
+.card-logo.emblem-mode { background-size: contain; background-color: #fff; }
+.card-badge {
+    position: absolute; top: 20px; right: 20px; z-index: 3;
+    padding: 8px 16px; border-radius: 12px; font-weight: 800; font-size: 13px;
+    text-transform: uppercase; letter-spacing: 1px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+.badge-government { background: #1e3a8a; color: #fff; }
+.badge-private { background: #f59e0b; color: #fff; }
+.card-hero-content { position: relative; z-index: 2; }
+.card-title { font-size: 38px; font-weight: 900; margin: 0 0 6px 0; line-height: 1.1; text-shadow: 0 4px 10px rgba(0,0,0,0.6); }
+.card-short { font-size: 18px; font-weight: 700; opacity: 0.9; text-transform: uppercase; letter-spacing: 2px; }
+.card-motto { font-size: 15px; font-style: italic; opacity: 0.9; margin-top: 8px; }
+
+.card-body { padding: 25px; display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+.card-block-title { font-size: 12px; text-transform: uppercase; font-weight: 800; color: #64748b; letter-spacing: 1px; margin: 0 0 8px 0; }
+.card-description { font-size: 14px; line-height: 1.5; color: #334155; margin: 0; }
+
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.stat {
+    background: #f1f5f9; border-radius: 14px; padding: 14px;
+    display: flex; flex-direction: column; justify-content: center;
+}
+.stat-label { font-size: 11px; text-transform: uppercase; font-weight: 700; color: #64748b; margin-bottom: 4px; }
+.stat-value { font-size: 20px; font-weight: 900; color: #1e293b; }
+.stat-value.money { color: #059669; }
+
+.leader-row {
+    grid-column: 1 / -1; display: flex; align-items: center; gap: 15px;
+    background: #f8fafc; border-radius: 14px; padding: 14px; margin-top: 10px;
+}
+.leader-avatar {
+    width: 60px; height: 60px; border-radius: 50%;
+    background-size: cover; background-position: center;
+    border: 3px solid #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.leader-role { font-size: 11px; text-transform: uppercase; font-weight: 800; color: #64748b; letter-spacing: 1px; }
+.leader-name { font-size: 18px; font-weight: 900; color: #1e293b; }
+
+.card-footer {
+    padding: 14px 25px; background: #0f172a; color: #94a3b8;
+    font-size: 11px; display: flex; justify-content: space-between;
+    letter-spacing: 1px;
+}
+</style>
+</head>
+<body>
+<div class="card">
+    <div class="card-hero" id="hero">
+        <div class="card-logo" id="logo"></div>
+        <div class="card-badge" id="badge"></div>
+        <div class="card-hero-content">
+            <h1 class="card-title" id="title"></h1>
+            <div class="card-short" id="short"></div>
+            <div class="card-motto" id="motto"></div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div>
+            <p class="card-block-title">Описание</p>
+            <p class="card-description" id="desc"></p>
+        </div>
+        <div class="stats">
+            <div class="stat">
+                <span class="stat-label">Участников</span>
+                <span class="stat-value" id="members">0</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Бюджет</span>
+                <span class="stat-value money" id="budget">0</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Тип</span>
+                <span class="stat-value" id="type">—</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Категория</span>
+                <span class="stat-value" id="cat">—</span>
+            </div>
+        </div>
+        <div class="leader-row">
+            <div class="leader-avatar" id="leader-avatar"></div>
+            <div>
+                <div class="leader-role">Лидер организации</div>
+                <div class="leader-name" id="leader-name">—</div>
+            </div>
+        </div>
+    </div>
+    <div class="card-footer">
+        <span id="org-id">ОРГАНИЗАЦИЯ #0</span>
+        <span id="created">—</span>
+    </div>
+</div>
+<script>
+const CAT_LABEL = {
+    ministry: 'Министерство',
+    organization: 'Организация',
+    company: 'Компания',
+    other: 'Другое'
+};
+const TYPE_LABEL = {
+    government: 'Государственная',
+    private: 'Частная'
+};
+
+window.renderOrganization = function (d) {
+    document.body.style.background = `linear-gradient(135deg, ${d.color}22, #ffffff)`;
+
+    const hero = document.getElementById('hero');
+    hero.style.background = `linear-gradient(135deg, ${d.color} 0%, ${shade(d.color, -30)} 100%)`;
+
+    const logo = document.getElementById('logo');
+    if (d.logo) {
+        logo.style.backgroundImage = `url('${d.logo}')`;
+        logo.classList.toggle('emblem-mode', d.logoMode === 'emblem');
+    } else {
+        logo.style.background = shade(d.color, -20);
+    }
+
+    const badge = document.getElementById('badge');
+    badge.textContent = TYPE_LABEL[d.type] || d.type;
+    badge.className = 'card-badge ' + (d.type === 'government' ? 'badge-government' : 'badge-private');
+
+    document.getElementById('title').textContent = d.name;
+    document.getElementById('short').textContent = d.short_name || '';
+    document.getElementById('motto').textContent = d.motto && d.motto !== '—' ? `«${d.motto}»` : '';
+    document.getElementById('desc').textContent = d.description || '—';
+    document.getElementById('members').textContent = d.members_count;
+    document.getElementById('budget').textContent = d.budget.toLocaleString('ru-RU') + ' ₽';
+    document.getElementById('type').textContent = TYPE_LABEL[d.type] || d.type;
+    document.getElementById('cat').textContent = CAT_LABEL[d.category] || d.category;
+    document.getElementById('leader-name').textContent = d.leader_name || '—';
+
+    const av = document.getElementById('leader-avatar');
+    if (d.leader_avatar) av.style.backgroundImage = `url('${d.leader_avatar}')`;
+    else av.style.background = shade(d.color, 40);
+
+    document.getElementById('org-id').textContent = `ОРГАНИЗАЦИЯ #${d.org_id}`;
+    document.getElementById('created').textContent = d.created_text || '';
+    return true;
+};
+
+function shade(hex, pct) {
+    hex = (hex || '#1e3a8a').replace('#', '');
+    if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+    let r = parseInt(hex.substr(0, 2), 16);
+    let g = parseInt(hex.substr(2, 2), 16);
+    let b = parseInt(hex.substr(4, 2), 16);
+    r = Math.max(0, Math.min(255, r + pct));
+    g = Math.max(0, Math.min(255, g + pct));
+    b = Math.max(0, Math.min(255, b + pct));
+    return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+}
+</script>
+</body>
+</html>

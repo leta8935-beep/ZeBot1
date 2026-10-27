@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Election</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&display=swap');
+:root { --text-main: #1e293b; --accent-blue: #1e3a8a; }
+body { font-family: 'Montserrat', sans-serif; margin: 0; padding: 20px; background: #fff; color: var(--text-main); }
+.workspace { max-width: 1000px; margin: 0 auto; display: flex; justify-content: center; }
+.template { background: #fff; width: 100%; padding: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); border-radius: 10px; display: none; position: relative; overflow: hidden; box-sizing: border-box; }
+.template.active { display: block; }
+
+#template-pres.active { min-height: 600px; }
+.pres-header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 3px solid var(--accent-blue); padding-bottom: 10px; margin-bottom: 10px; flex-wrap: wrap; gap: 10px; }
+.pres-title { font-size: 26px; font-weight: 900; color: var(--accent-blue); line-height: 1.2; margin: 0; }
+.pres-date { font-size: 22px; font-weight: 800; }
+.pres-turnout { display: flex; align-items: center; font-size: 14px; font-weight: 800; }
+.bar { width: 80px; height: 8px; background: #e2e8f0; border-radius: 5px; overflow: hidden; margin-left: 10px; margin-right: 10px; }
+.bar-fill { height: 100%; background: linear-gradient(90deg, #1e3a8a, #3b82f6); }
+.pres-grid { display: flex; gap: 10px; align-items: flex-end; height: 500px; margin-top: 5px; }
+.cand-col { flex: 1; position: relative; height: 100%; }
+.cand-photo-box { position: absolute; left: 0; right: 30%; top: 0; bottom: 0; border-radius: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.3); z-index: 1; display: flex; flex-direction: column; justify-content: flex-end; padding: 10px; color: white; background-size: cover; background-position: top center; overflow: hidden; }
+.cand-name { font-size: 22px; font-weight: 900; text-transform: uppercase; margin-bottom: 5px; text-shadow: 0 4px 6px rgba(0,0,0,0.8); }
+.party-footer { background: rgba(255,255,255,0.95); border-radius: 10px; padding: 5px; display: flex; gap: 8px; color: var(--text-main); align-items: center; }
+.party-logo { width: 30px; height: 30px; border-radius: 8px; background-size: cover; background-position: center; background-repeat: no-repeat; }
+.party-info h4 { margin: 0; font-size: 12px; font-weight: 800; }
+.party-info p { margin: 0; font-size: 10px; color: #64748b; }
+.bars-container { position: absolute; left: 35%; right: 0; top: 0; bottom: 0; display: flex; justify-content: space-around; align-items: flex-end; z-index: 2; }
+.vote-bar-wrapper { width: 90px; height: 100%; display: flex; justify-content: center; align-items: flex-end; }
+.vote-bar { width: 90%; height: 0%; border-radius: 20px 20px 0 0; position: relative; transition: height 1s ease-out; box-shadow: 0 -5px 15px rgba(0,0,0,0.2); }
+.vote-percent { position: absolute; left: 50%; transform: translateX(-50%); font-size: 12px; font-weight: 900; white-space: nowrap; z-index: 5; }
+
+#template-par.active { min-height: 600px; }
+.par-header { display: flex; flex-direction: row-reverse; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 20px; }
+.par-title { font-size: 26px; font-weight: 900; color: var(--accent-blue); line-height: 1.2; margin: 0; }
+.par-date { font-size: 22px; font-weight: 900; margin: 0; }
+.par-turnout { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.turnout-wrap { position: relative; width: 100px; height: 100px; }
+.turnout-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.turnout-inner { position: absolute; top: 10px; left: 10px; width: 80px; height: 80px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 900; color: var(--accent-blue); }
+.turnout-label { font-size: 12px; font-weight: 600; }
+.par-main { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: end; }
+.par-seats-box { background: #f8fafc; border-radius: 20px; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+.par-seats-title { font-size: 16px; font-weight: 800; margin-bottom: 10px; }
+.seat-total { font-family: 'Montserrat', sans-serif; font-size: 24px; font-weight: 900; fill: #1e293b; }
+.seat-total-sub { font-family: 'Montserrat', sans-serif; font-size: 12px; font-weight: 600; fill: #64748b; }
+.par-right { display: flex; justify-content: space-around; align-items: flex-end; height: 300px; background: #f8fafc; border-radius: 20px; padding: 20px 10px 10px 10px; }
+.par-party-col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; width: 80px; position: relative; }
+.par-bar { width: 60px; height: 0%; border-radius: 20px 20px 0 0; position: relative; transition: height 1s ease-out; margin-bottom: 5px; }
+.par-bar-val { position: absolute; left: 50%; transform: translateX(-50%); font-size: 11px; font-weight: 900; white-space: nowrap; z-index: 10; }
+.par-party-flag { width: 40px; height: 40px; border-radius: 10px; background-size: cover; background-position: center; background-repeat: no-repeat; margin-bottom: 5px; }
+.par-party-flag.emblem-mode { background-size: contain; }
+.par-party-name { font-size: 12px; font-weight: 800; text-align: center; line-height: 1.2; min-height: 30px; display: flex; align-items: flex-end; justify-content: center; }
+</style>
+</head>
+<body>
+<div class="workspace">
+    <div id="template-pres" class="template">
+        <div class="pres-header">
+            <div>
+                <h1 class="pres-title" id="pv_title"></h1>
+                <h2 class="pres-date" id="pv_date"></h2>
+            </div>
+            <div class="pres-turnout">
+                Явка:
+                <div class="bar"><div class="bar-fill" id="pv_turnout_bar" style="width:0%"></div></div>
+                <span id="pv_turnout">0%</span>
+            </div>
+        </div>
+        <div class="pres-grid" id="pres-box"></div>
+    </div>
+
+    <div id="template-par" class="template">
+        <div class="par-header">
+            <div class="par-turnout">
+                <div class="turnout-wrap">
+                    <svg class="turnout-svg" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="40" fill="none" stroke="#e2e8f0" stroke-width="10"/>
+                        <circle id="dv_turnout_circle_svg" cx="50" cy="50" r="40" fill="none" stroke="#1e3a8a" stroke-width="10" stroke-dasharray="251.2" stroke-dashoffset="251.2" stroke-linecap="round"/>
+                    </svg>
+                    <div class="turnout-inner" id="dv_turnout">0%</div>
+                </div>
+                <div class="turnout-label">Явка</div>
+            </div>
+            <div>
+                <h1 class="par-title" id="dv_title"></h1>
+                <h2 class="par-date" id="dv_date"></h2>
+            </div>
+        </div>
+        <div class="par-main">
+            <div class="par-seats-box">
+                <div class="par-seats-title">Новый созыв (<span id="dv_total_seats">0</span> мест)</div>
+                <div id="seat-map-container"></div>
+            </div>
+            <div class="par-right" id="par-parties-box"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+function darkenColor(hex, amount) {
+    hex = hex.replace('#', '');
+    if (hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+    let r = Math.max(0, Math.min(255, parseInt(hex.substring(0,2),16)+amount));
+    let g = Math.max(0, Math.min(255, parseInt(hex.substring(2,4),16)+amount));
+    let b = Math.max(0, Math.min(255, parseInt(hex.substring(4,6),16)+amount));
+    return "#" + ((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);
+}
+
+function renderPresidential(d) {
+    document.getElementById('pv_title').textContent = d.title;
+    document.getElementById('pv_date').textContent = d.date;
+    document.getElementById('pv_turnout').textContent = d.turnout + "%";
+    document.getElementById('pv_turnout_bar').style.width = d.turnout + "%";
+    const box = document.getElementById('pres-box');
+    box.innerHTML = '';
+    d.candidates.forEach(c => {
+        let photoStyle = c.photo ? `background-image: url('${c.photo}')` : 'background: linear-gradient(135deg, #1e293b, #475569)';
+        let flagStyle = c.flag ? `background-image: url('${c.flag}')` : `background: ${c.color}`;
+        let flagClass = c.flagMode === 'emblem' ? 'emblem-mode' : '';
+        if (c.flagMode === 'emblem') flagStyle += '; background-size: contain; background-position: center; background-repeat: no-repeat;';
+        let barHeight = Math.min(100, Math.max(0, parseFloat(c.votes)));
+        let grad = `background: linear-gradient(180deg, ${c.color} 0%, ${darkenColor(c.color,-30)} 100%)`;
+        let textStyle = barHeight >= 5 ? 'color:white;bottom:10px;' : `color:${c.color};bottom:100%;margin-bottom:5px;`;
+        box.innerHTML += `
+        <div class="cand-col">
+            <div class="cand-photo-box" style="${photoStyle}">
+                <div class="cand-name">${c.name}</div>
+                <div class="party-footer">
+                    <div class="party-logo ${flagClass}" style="${flagStyle}"></div>
+                    <div class="party-info"><h4>${c.party}</h4><p>${c.ideology}</p></div>
+                </div>
+            </div>
+            <div class="bars-container">
+                <div class="vote-bar-wrapper">
+                    <div class="vote-bar" style="height:${barHeight}%;${grad}">
+                        <div class="vote-percent" style="${textStyle}">${c.votes}%</div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    });
+}
+
+function buildSeats(total) {
+    const t = Math.max(1, Math.floor(total));
+    const rows = Math.max(2, Math.min(16, Math.round(Math.sqrt(t / 2.4))));
+    const rInner = 0.45;
+    const radii = [];
+    for (let i = 0; i < rows; i++) radii.push(rows === 1 ? 1 : rInner + (1 - rInner) * (i / (rows - 1)));
+    const sum = radii.reduce((a, b) => a + b, 0);
+    const raw = radii.map(r => (t * r) / sum);
+    const counts = raw.map(v => Math.floor(v));
+    let rest = t - counts.reduce((a, b) => a + b, 0);
+    const order = raw.map((v, i) => ({i, frac: v - Math.floor(v)})).sort((a, b) => b.frac - a.frac);
+    let k = 0;
+    while (rest > 0) { counts[order[k % order.length].i]++; rest--; k++; }
+    const seats = [];
+    let minArc = Infinity;
+    counts.forEach((count, i) => {
+        if (count <= 0) return;
+        const r = radii[i];
+        if (count > 1) minArc = Math.min(minArc, (Math.PI * r) / (count - 1));
+        for (let j = 0; j < count; j++) {
+            const angle = count === 1 ? Math.PI / 2 : Math.PI - (Math.PI * j) / (count - 1);
+            seats.push({ x: Math.cos(angle) * r, y: -Math.sin(angle) * r, angle, r });
+        }
+    });
+    const rowGap = rows > 1 ? (1 - rInner) / (rows - 1) : 0.3;
+    if (!isFinite(minArc)) minArc = rowGap;
+    const dot = Math.min(0.36 * Math.min(rowGap, minArc), 0.05);
+    seats.sort((a, b) => (b.angle === a.angle ? b.r - a.r : b.angle - a.angle));
+    return { seats, dot };
+}
+
+function drawParliamentSeats(totalSeats, parties) {
+    const container = document.getElementById('seat-map-container');
+    container.innerHTML = '';
+    const { seats, dot } = buildSeats(totalSeats);
+    let colors = [];
+    parties.forEach(p => {
+        let n = Math.max(0, Math.floor(p.seats));
+        for (let i = 0; i < n; i++) colors.push(p.color);
+    });
+    const S = 100, d = dot * S, pad = d + 3;
+    const vb = `${-(S+pad)} ${-(S+pad)} ${2*(S+pad)} ${S+pad+pad}`;
+    const svgNS = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(svgNS, "svg");
+    svg.setAttribute("viewBox", vb);
+    svg.style.width = "100%"; svg.style.height = "auto"; svg.style.display = "block";
+    seats.forEach((s, i) => {
+        const circle = document.createElementNS(svgNS, "circle");
+        circle.setAttribute("cx", s.x * S);
+        circle.setAttribute("cy", s.y * S);
+        circle.setAttribute("r", d);
+        circle.setAttribute("fill", colors[i] || '#cbd5e1');
+        svg.appendChild(circle);
+    });
+    const text = document.createElementNS(svgNS, "text");
+    text.setAttribute("x", 0); text.setAttribute("y", -16);
+    text.setAttribute("text-anchor", "middle"); text.setAttribute("class", "seat-total");
+    text.textContent = Math.max(0, Math.floor(totalSeats));
+    svg.appendChild(text);
+    const sub = document.createElementNS(svgNS, "text");
+    sub.setAttribute("x", 0); sub.setAttribute("y", -2);
+    sub.setAttribute("text-anchor", "middle"); sub.setAttribute("class", "seat-total-sub");
+    sub.textContent = "МЕСТ";
+    svg.appendChild(sub);
+    container.appendChild(svg);
+}
+
+function renderParliamentary(d) {
+    document.getElementById('dv_title').textContent = d.title;
+    document.getElementById('dv_date').textContent = d.date;
+    document.getElementById('dv_turnout').textContent = d.turnout + "%";
+    const svgCircle = document.getElementById('dv_turnout_circle_svg');
+    const circumference = 2 * Math.PI * 40;
+    svgCircle.style.strokeDasharray = circumference;
+    svgCircle.style.strokeDashoffset = circumference - (d.turnout / 100) * circumference;
+    document.getElementById('dv_total_seats').textContent = d.totalSeats;
+    const box = document.getElementById('par-parties-box');
+    box.innerHTML = '';
+    d.parties.forEach(p => {
+        let flagStyle = p.flag ? `background-image: url('${p.flag}')` : `background: ${p.color}`;
+        let flagClass = p.flagMode === 'emblem' ? 'emblem-mode' : '';
+        if (p.flagMode === 'emblem') flagStyle += '; background-size: contain; background-position: center; background-repeat: no-repeat;';
+        let barHeight = Math.min(100, Math.max(0, parseFloat(p.votes)));
+        let grad = `background: linear-gradient(180deg, ${p.color} 0%, ${darkenColor(p.color,-30)} 100%)`;
+        let textStyle = barHeight >= 5 ? 'color:white;bottom:10px;' : `color:${p.color};bottom:100%;margin-bottom:5px;`;
+        box.innerHTML += `
+        <div class="par-party-col">
+            <div class="par-bar" style="height:${barHeight}%;${grad}">
+                <div class="par-bar-val" style="${textStyle}">${p.votes}%</div>
+            </div>
+            <div class="par-party-flag ${flagClass}" style="${flagStyle}"></div>
+            <div class="par-party-name">${p.name}</div>
+        </div>`;
+    });
+    drawParliamentSeats(d.totalSeats, d.parties);
+}
+
+window.renderElection = function (data) {
+    if (data.type === 'presidential') {
+        document.getElementById('template-pres').classList.add('active');
+        document.getElementById('template-par').classList.remove('active');
+        renderPresidential(data);
+    } else {
+        document.getElementById('template-par').classList.add('active');
+        document.getElementById('template-pres').classList.remove('active');
+        renderParliamentary(data);
+    }
+    return true;
+};
+</script>
+</body>
+</html>
